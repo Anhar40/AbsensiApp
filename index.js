@@ -81,22 +81,26 @@ app.use(
 
 app.use(express.json());
 
+const mySessionStore = new SequelizeStore({
+  db: sequelize,
+  tableName: 'Sessions' // Otomatis membuat tabel Sessions di DB kamu
+});
+
 app.use(session({
-  secret: process.env.SESSION_SECRET,
-  store: new SequelizeStore({
-    db: sequelize,
-    checkExpirationInterval: 15 * 60 * 1000,
-    expiration: 24 * 60 * 60 * 1000
-  }),
+  name: 'SESS_ID', // <--- NAMA COOKIE DISAMAKAN
+  secret: process.env.SESSION_SECRET || 'kunci_rahasia_anda',
+  store: mySessionStore,
   resave: false,
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    secure: true, // WAJIB untuk Vercel
+    secure: true, // Karena di Vercel pakai HTTPS
     sameSite: 'lax',
-    maxAge: 24 * 60 * 60 * 1000
+    maxAge: 24 * 60 * 60 * 1000 // Berlaku 1 Hari
   }
 }));
+
+mySessionStore.sync();
 
 app.use(express.static(path.join(__dirname, 'public')));
 // 1. Handler untuk rute tingkat pertama (misal: /dashboard)
