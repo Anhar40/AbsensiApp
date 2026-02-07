@@ -1,5 +1,6 @@
+// TAMBAHKAN INI agar Vercel tidak menghapus paket pg
+require('pg'); 
 const { Sequelize } = require('sequelize');
-
 require('dotenv').config();
 
 const sequelize = new Sequelize(
@@ -9,8 +10,14 @@ const sequelize = new Sequelize(
     {
         host: process.env.DB_HOST,
         port: process.env.DB_PORT,
-        dialect: process.env.DB_DIALECT,
+        dialect: 'postgres', // Tulis langsung 'postgres', jangan pakai process.env
         logging: false,
+        dialectOptions: {
+            ssl: {
+                require: true,
+                rejectUnauthorized: false
+            }
+        },
         pool: {
             max: 10,
             min: 0,
@@ -20,11 +27,11 @@ const sequelize = new Sequelize(
     }
 );
 
-// Tes Koneksi
+// Tes Koneksi (Opsional, tapi bagus untuk log)
 async function testConnection() {
     try {
         await sequelize.authenticate();
-        console.log(`✅ [DATABASE] Connected using ${process.env.DB_DIALECT.toUpperCase()}`);
+        console.log('✅ [DATABASE] Connected successfully.');
     } catch (error) {
         console.error('❌ [DATABASE ERROR] Unable to connect:', error.message);
     }
