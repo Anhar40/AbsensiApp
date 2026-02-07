@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { Siswa, Jadwal, Absensi, Mapel, Kelas } = require('../models/index');
 const { Op } = require('sequelize');
-const moment = require('moment'); // npm install moment (untuk olah waktu lebih mudah)
+const moment = require('moment');
+require('moment/locale/id'); // npm install moment (untuk olah waktu lebih mudah)
 
 router.post('/scan', async (req, res) => {
     try {

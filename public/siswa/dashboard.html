@@ -116,18 +116,26 @@
                 document.getElementById('barcodeCode').innerText = siswa.barcode_data;
 
                 // Generate Barcode dengan pengamanan
-                if (siswa.barcode_data) {
+                // Generate Barcode dengan pengamanan
+                const targetElement = document.getElementById('barcode');
+                if (siswa.barcode_data && targetElement) {
                     try {
-                        JsBarcode("#barcode", siswa.barcode_data, {
+                        JsBarcode(targetElement, String(siswa.barcode_data), {
                             format: "CODE128",
                             lineColor: "#1e293b",
                             width: 2,
                             height: 80,
-                            displayValue: false
+                            displayValue: false,
+                            // Tambahkan validasi jika library gagal handle string tertentu
+                            valid: function (valid) {
+                                if (!valid) console.error("Data barcode tidak valid untuk format CODE128");
+                            }
                         });
                     } catch (barcodeErr) {
                         console.error("Gagal generate barcode:", barcodeErr);
                     }
+                } else {
+                    console.warn("Data barcode kosong atau elemen #barcode tidak ditemukan di HTML");
                 }
 
                 loadHistory();
