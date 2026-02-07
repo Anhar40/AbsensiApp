@@ -34,30 +34,45 @@ app.use(
       scriptSrc: [
         "'self'", 
         "https://cdn.tailwindcss.com", 
-        "https://cdn.jsdelivr.net",      // Untuk JsBarcode
-        "https://cdnjs.cloudflare.com",  // UNTUK jsPDF & FontAwesome JS
+        "https://cdn.jsdelivr.net",
+        "https://cdnjs.cloudflare.com",
         "'unsafe-inline'",
-        "https://vercel.live"
+        "https://vercel.live",
+        "https://*.vercel.live" // <--- Tambahkan wildcard ini
       ],
       scriptSrcAttr: ["'unsafe-inline'"], 
       styleSrc: [
         "'self'", 
         "https://fonts.googleapis.com", 
-        "https://cdnjs.cloudflare.com", // FontAwesome CSS
+        "https://cdnjs.cloudflare.com",
         "https://cdn.tailwindcss.com",
         "'unsafe-inline'"
       ],
       fontSrc: [
         "'self'", 
         "https://fonts.gstatic.com", 
-        "https://cdnjs.cloudflare.com"  // FontAwesome Fonts
+        "https://cdnjs.cloudflare.com"
       ],
-      imgSrc: ["'self'", "data:", "https://ui-avatars.com",
+      imgSrc: [
+        "'self'", 
+        "data:", 
+        "https://ui-avatars.com",
         "https://cdnjs.cloudflare.com",
         "https://cdn-icons-png.flaticon.com",
-        "https://vercel.com", "https://vercel.live"
+        "https://vercel.com", 
+        "https://vercel.live"
       ],
-      connectSrc: ["'self'", "https://vercel.live"], 
+      connectSrc: [
+        "'self'", 
+        "https://vercel.live", 
+        "https://*.vercel.live" // <--- Tambahkan wildcard ini
+      ],
+      // TAMBAHKAN INI: Karena Vercel Live menggunakan Iframe
+      frameSrc: [
+        "'self'", 
+        "https://vercel.live", 
+        "https://*.vercel.live"
+      ],
     },
   })
 );
