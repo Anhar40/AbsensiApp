@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Siswa Dashboard | E-Presensi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #f1f5f9;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        .barcode-container {
+            background: white;
+            padding: 15px;
+            border-radius: 20px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+
+<body class="pb-20">
+
+    <div class="bg-indigo-600 p-8 rounded-b-[3.5rem] text-white shadow-2xl">
+        <div class="flex justify-between items-start mb-6">
+            <div>
+                <p class="text-indigo-100 text-xs font-bold uppercase tracking-widest">Selamat Datang,</p>
+                <h1 id="namaSiswa" class="text-2xl font-black mt-1">Memuat...</h1>
+            </div>
+            <button onclick="logout()"
+                class="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center border border-white/30">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+        </div>
+
+        <div class="flex gap-4 items-center">
+            <div class="bg-white/20 px-4 py-2 rounded-xl border border-white/20">
+                <p class="text-[10px] text-indigo-100 font-bold uppercase">Kelas</p>
+                <p id="kelasSiswa" class="text-sm font-bold">-</p>
+            </div>
+            <div class="bg-white/20 px-4 py-2 rounded-xl border border-white/20">
+                <p class="text-[10px] text-indigo-100 font-bold uppercase">NISN</p>
+                <p id="nisnSiswa" class="text-sm font-bold">-</p>
+            </div>
+        </div>
+    </div>
+
+    <main class="p-6 -mt-10">
+        <div class="glass-card rounded-[2.5rem] p-8 shadow-xl border border-white text-center mb-8">
+            <h2 class="text-slate-800 font-bold mb-2">ID Digital Siswa</h2>
+            <p class="text-slate-400 text-xs mb-6">Tunjukkan barcode ini ke guru untuk presensi</p>
+
+            <div class="barcode-container flex justify-center mb-4">
+                <svg id="barcode"></svg>
+            </div>
+
+            <p id="barcodeCode" class="text-xs font-mono font-bold text-slate-500 tracking-[0.5em]"></p>
+        </div>
+
+        <div class="space-y-4">
+            <h3 class="font-bold text-slate-800 ml-2">Kehadiran Hari Ini</h3>
+            <div id="historyContainer" class="space-y-3">
+            </div>
+        </div>
+    </main>
+
+    <nav
+        class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 p-4 flex justify-around items-center z-50">
+        <a href="dashboard" class="text-indigo-600 flex flex-col items-center gap-1">
+            <i class="fas fa-home text-xl"></i>
+            <span class="text-[10px] font-bold">Beranda</span>
+        </a>
+        <a href="riwayat" class="text-slate-300 flex flex-col items-center gap-1">
+            <i class="fas fa-calendar-check text-xl"></i>
+            <span class="text-[10px] font-bold">Riwayat</span>
+        </a>
+        <a href="profile" class="text-slate-300 flex flex-col items-center gap-1">
+            <i class="fas fa-user-circle text-xl"></i>
+            <span class="text-[10px] font-bold">Profil</span>
+        </a>
+    </nav>
+
+    <script>
+        async function initDashboard() {
+            try {
+                // Cek apakah library JsBarcode sudah terload
+                if (typeof JsBarcode === "undefined") {
+                    console.error("Library JsBarcode belum termuat.");
+                    return;
+                }
+
+                const resProfil = await fetch('/siswa/profil-saya');
+
+                if (!resProfil.ok) {
+                    const errData = await resProfil.json();
+                    throw new Error(errData.message || "Gagal memuat data");
+                }
+
+                const siswa = await resProfil.json();
+
+                // Mengisi Data UI
+                document.getElementById('namaSiswa').innerText = siswa.nama_siswa;
+                document.getElementById('kelasSiswa').innerText = (siswa.Kelas || siswa.Kela)?.nama_kelas || '-';
+                document.getElementById('nisnSiswa').innerText = siswa.nisn;
+                document.getElementById('barcodeCode').innerText = siswa.barcode_data;
+
+                // Generate Barcode dengan pengamanan
+                if (siswa.barcode_data) {
+                    try {
+                        JsBarcode("#barcode", siswa.barcode_data, {
+                            format: "CODE128",
+                            lineColor: "#1e293b",
+                            width: 2,
+                            height: 80,
+                            displayValue: false
+                        });
+                    } catch (barcodeErr) {
+                        console.error("Gagal generate barcode:", barcodeErr);
+                    }
+                }
+
+                loadHistory();
+
+            } catch (err) {
+                console.error("Detail Error di Frontend:", err.message);
+                if (err.message.includes("Sesi")) {
+                    window.location.href = '/';
+                }
+            }
+        }
+
+        async function loadHistory() {
+            const res = await fetch('/siswa/presensi-hari-ini');
+            const logs = await res.json();
+            const container = document.getElementById('historyContainer');
+
+            if (logs.length === 0) {
+                container.innerHTML = `<div class="bg-white p-6 rounded-3xl text-center text-slate-400 text-xs italic border border-slate-100">Belum ada aktivitas presensi hari ini.</div>`;
+                return;
+            }
+
+            container.innerHTML = logs.map(log => `
+                <div class="bg-white p-4 rounded-3xl flex items-center gap-4 shadow-sm border border-slate-50">
+                    <div class="w-12 h-12 ${log.status === 'Hadir' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'} rounded-2xl flex items-center justify-center">
+                        <i class="fas ${log.status === 'Hadir' ? 'fa-check' : 'fa-clock'}"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="text-sm font-bold text-slate-800">${log.Jadwal.Mapel.nama_mapel}</h4>
+                        <p class="text-[10px] text-slate-400">${new Date(log.waktu_scan).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB</p>
+                    </div>
+                    <span class="text-[10px] font-black uppercase px-3 py-1 rounded-full ${log.status === 'Hadir' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
+                        ${log.status}
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        async function logout() {
+            await fetch('/auth/logout', { method: 'POST' });
+            window.location.href = '/';
+        }
+
+        initDashboard();
+    </script>
+</body>
+
+</html>

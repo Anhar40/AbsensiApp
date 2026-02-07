@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Scanner Presensi | E-Presensi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0f172a; overflow: hidden; }
+        #reader { border: none !important; }
+        #reader video { object-fit: cover !important; }
+        .scan-overlay {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 260px; height: 260px; border: 4px solid #6366f1; border-radius: 40px;
+            z-index: 10; box-shadow: 0 0 0 1000px rgba(15, 23, 42, 0.7);
+        }
+        .scan-line {
+            width: 100%; height: 3px; background: #6366f1;
+            position: absolute; top: 0; animation: scanAnim 2s infinite ease-in-out;
+            box-shadow: 0 0 15px #6366f1;
+        }
+        @keyframes scanAnim { 0% { top: 0; } 50% { top: 100%; } 100% { top: 0; } }
+    </style>
+</head>
+<body class="flex flex-col h-screen text-white">
+
+    <header class="p-6 flex items-center justify-between z-20 bg-slate-900/50 backdrop-blur-md">
+        <div class="flex items-center gap-4">
+            <a href="/guru/dashboard" class="w-10 h-10 flex items-center justify-center bg-white/10 rounded-full hover:bg-white/20 transition">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div>
+                <h1 class="font-bold text-lg">Scanner Aktif</h1>
+                <p class="text-[10px] text-indigo-400 uppercase tracking-widest font-black">Mode Otomatis Berdasarkan Jadwal</p>
+            </div>
+        </div>
+        <button onclick="toggleFlash()" id="torchBtn" class="w-10 h-10 flex items-center justify-center bg-amber-400/10 text-amber-400 rounded-full">
+            <i class="fas fa-bolt"></i>
+        </button>
+    </header>
+
+    <main class="flex-1 relative overflow-hidden bg-black">
+        <div id="reader" class="w-full h-full"></div>
+        <div class="scan-overlay">
+            <div class="scan-line"></div>
+        </div>
+    </main>
+
+    <footer class="bg-slate-900 p-8 rounded-t-[3rem] z-20 shadow-2xl border-t border-white/10">
+        <div id="resultBox" class="text-center min-h-[100px] flex flex-col justify-center">
+            <div id="placeholderText">
+                <p class="text-slate-400 text-sm italic mb-2">Siapkan QR Code Siswa</p>
+                <div class="flex justify-center gap-2">
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"></span>
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                    <span class="w-2 h-2 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.5s]"></span>
+                </div>
+            </div>
+
+            <div id="successView" class="hidden">
+                <h2 id="resSiswa" class="text-2xl font-black text-white leading-tight"></h2>
+                <p id="resPelajaran" class="text-indigo-400 font-bold text-sm uppercase mt-1"></p>
+                <div id="resStatus" class="inline-block mt-3 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest"></div>
+            </div>
+        </div>
+    </footer>
+
+    <audio id="beep" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
+
+    <script>
+        let html5QrCode;
+        let isProcessing = false;
+
+        async function initScanner() {
+            html5QrCode = new Html5Qrcode("reader");
+            const config = { 
+                fps: 20, 
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0 
+            };
+
+            try {
+                await html5QrCode.start(
+                    { facingMode: "environment" }, 
+                    config,
+                    onScanSuccess
+                );
+            } catch (err) {
+                alert("Kamera tidak ditemukan atau izin ditolak.");
+            }
+        }
+
+        async function onScanSuccess(decodedText) {
+            if (isProcessing) return;
+            isProcessing = true;
+
+            // Feedback Visual & Suara
+            document.getElementById('beep').play();
+            vibrateMobile();
+
+            try {
+                // Sesuai dengan endpoint Anda yang hanya butuh barcode_data
+                const response = await fetch('/attendance/scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ barcode_data: decodedText })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showResult(result, true);
+                } else {
+                    showResult(result, false);
+                }
+            } catch (err) {
+                showResult({ message: "Koneksi Terputus" }, false);
+            } finally {
+                // Jeda 3 detik sebelum bisa scan siswa berikutnya
+                setTimeout(() => {
+                    resetUI();
+                    isProcessing = false;
+                }, 3000);
+            }
+        }
+
+        function showResult(data, isSuccess) {
+            document.getElementById('placeholderText').classList.add('hidden');
+            const successView = document.getElementById('successView');
+            successView.classList.remove('hidden');
+
+            const resSiswa = document.getElementById('resSiswa');
+            const resPelajaran = document.getElementById('resPelajaran');
+            const resStatus = document.getElementById('resStatus');
+
+            if (isSuccess) {
+                resSiswa.innerText = data.siswa;
+                resPelajaran.innerText = data.pelajaran;
+                resStatus.innerText = data.message; // "Absensi berhasil: Hadir/Terlambat"
+                resStatus.className = "inline-block mt-3 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-500/20 text-emerald-400";
+            } else {
+                resSiswa.innerText = "Gagal!";
+                resPelajaran.innerText = data.message;
+                resStatus.innerText = "Peringatan";
+                resStatus.className = "inline-block mt-3 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-500/20 text-rose-400";
+            }
+        }
+
+        function resetUI() {
+            document.getElementById('placeholderText').classList.remove('hidden');
+            document.getElementById('successView').classList.add('hidden');
+        }
+
+        function vibrateMobile() {
+            if (navigator.vibrate) navigator.vibrate(100);
+        }
+
+        let flashOn = false;
+        async function toggleFlash() {
+            try {
+                flashOn = !flashOn;
+                await html5QrCode.applyVideoConstraints({
+                    advanced: [{ torch: flashOn }]
+                });
+                document.getElementById('torchBtn').classList.toggle('bg-amber-400', flashOn);
+                document.getElementById('torchBtn').classList.toggle('text-slate-900', flashOn);
+            } catch (e) {
+                console.error("Flash tidak didukung");
+            }
+        }
+
+        // Jalankan scanner
+        initScanner();
+    </script>
+</body>
+</html>

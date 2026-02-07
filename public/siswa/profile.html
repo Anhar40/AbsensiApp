@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profil Saya | E-Presensi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; }
+        .input-group focus-within { border-color: #4f46e5; ring: 2px #e0e7ff; }
+    </style>
+</head>
+<body class="pb-24">
+
+    <div class="bg-indigo-600 p-8 rounded-b-[3rem] text-center text-white shadow-xl">
+        <div class="relative w-24 h-24 mx-auto mb-4">
+            <img src="https://ui-avatars.com/api/?name=Siswa&background=random" id="avatarImg" class="rounded-full border-4 border-white/30 shadow-lg">
+            <div class="absolute bottom-0 right-0 bg-emerald-500 w-6 h-6 rounded-full border-2 border-white"></div>
+        </div>
+        <h2 id="displayNama" class="text-xl font-bold">Memuat...</h2>
+        <p id="displayKelas" class="text-indigo-100 text-sm">Kelas -</p>
+    </div>
+
+    <main class="p-6 -mt-6">
+        <form id="profileForm" class="space-y-4">
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">NISN (Permanen)</label>
+                <input type="text" id="nisn" disabled class="w-full bg-slate-50 text-slate-500 font-bold outline-none mt-1">
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 focus-within:ring-2 focus-within:ring-indigo-100 transition">
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nama Lengkap</label>
+                <input type="text" id="nama_siswa" required class="w-full outline-none mt-1 text-slate-700 font-semibold">
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 focus-within:ring-2 focus-within:ring-indigo-100 transition">
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Email / Username Login</label>
+                <input type="email" id="email" required class="w-full outline-none mt-1 text-slate-700 font-semibold">
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 focus-within:ring-2 focus-within:ring-indigo-100 transition">
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ganti Password (Kosongkan jika tidak diubah)</label>
+                <input type="password" id="passwordBaru" placeholder="••••••••" class="w-full outline-none mt-1 text-slate-700 font-semibold">
+            </div>
+
+            <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition active:scale-95">
+                Simpan Perubahan
+            </button>
+        </form>
+
+        <button onclick="logout()" class="w-full mt-4 text-rose-500 font-bold py-2 text-sm">
+            Keluar dari Akun
+        </button>
+    </main>
+
+    <nav class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-slate-100 p-4 flex justify-around items-center z-50">
+        <a href="dashboard" class="text-slate-300 flex flex-col items-center gap-1"><i class="fas fa-home text-xl"></i></a>
+        <a href="riwayat" class="text-slate-300 flex flex-col items-center gap-1"><i class="fas fa-calendar-check text-xl"></i></a>
+        <a href="profile" class="text-indigo-600 flex flex-col items-center gap-1"><i class="fas fa-user-circle text-xl"></i></a>
+    </nav>
+
+    <script>
+        async function loadProfile() {
+            try {
+                // Gunakan endpoint profil yang sudah kita buat sebelumnya
+                const res = await fetch('/siswa/profil-saya');
+                const user = await fetch('/auth/me'); // Untuk ambil email dari tabel users
+                
+                const dataSiswa = await res.json();
+                const dataUser = await user.json();
+
+                document.getElementById('displayNama').innerText = dataSiswa.nama_siswa;
+                document.getElementById('displayKelas').innerText = dataSiswa.Kelas?.nama_kelas || dataSiswa.Kela?.nama_kelas || '-';
+                document.getElementById('avatarImg').src = `https://ui-avatars.com/api/?name=${dataSiswa.nama_siswa}&background=6366f1&color=fff`;
+                
+                // Isi form
+                document.getElementById('nisn').value = dataSiswa.nisn;
+                document.getElementById('nama_siswa').value = dataSiswa.nama_siswa;
+                document.getElementById('email').value = dataUser.user.email || ''; 
+            } catch (err) {
+                console.error(err);
+                console.error("Detail Error di Frontend:", err.message);
+                if (err.message.includes("Sesi")) {
+                    window.location.href = '/';
+                }
+            }
+        }
+
+        document.getElementById('profileForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            btn.innerText = "Menyimpan...";
+            btn.disabled = true;
+
+            const payload = {
+                nama_siswa: document.getElementById('nama_siswa').value,
+                email: document.getElementById('email').value,
+                passwordBaru: document.getElementById('passwordBaru').value
+            };
+
+            const res = await fetch('/siswa/update-profil', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                alert("Profil berhasil diperbarui!");
+                location.reload();
+            } else {
+                alert("Gagal memperbarui profil.");
+                btn.innerText = "Simpan Perubahan";
+                btn.disabled = false;
+            }
+        };
+
+        async function logout() {
+            if(confirm("Yakin ingin keluar?")) {
+                await fetch('/auth/logout', { method: 'POST' });
+                window.location.href = '/';
+            }
+        }
+
+        window.onload = loadProfile;
+    </script>
+</body>
+</html>

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Manajemen Siswa | E-Presensi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
+        .sidebar-active { background: #4f46e5; color: white; }
+        .mobile-sidebar { transform: translateX(-100%); transition: transform 0.3s ease; }
+        .mobile-sidebar.open { transform: translateX(0); }
+    </style>
+</head>
+<body class="flex flex-col lg:flex-row min-h-screen">
+
+    <div id="overlay" onclick="toggleMenu()" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden"></div>
+
+    <aside id="sidebar" class="mobile-sidebar fixed lg:static inset-y-0 left-0 w-72 bg-slate-900 text-white z-50 lg:translate-x-0 flex flex-col shrink-0">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-10 px-2">
+                <div class="flex items-center gap-3">
+                    <div class="bg-indigo-500 w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xl">E</div>
+                    <span class="text-xl font-bold tracking-tight text-white">E-Presensi</span>
+                </div>
+                <button onclick="toggleMenu()" class="lg:hidden text-slate-400"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <nav class="space-y-2 flex-1">
+                <a href="/admin/dashboard" class="flex items-center gap-3 p-4 text-slate-400 hover:text-white rounded-2xl transition">
+                    <i class="fas fa-th-large w-6"></i> Dashboard
+                </a>
+                 <a href="management_siswa" class="sidebar-active flex items-center gap-3 p-4 rounded-2xl shadow-lg shadow-indigo-500/20">
+                    <i class="fas fa-user-graduate w-6"></i> Data Siswa
+                </a>
+                <a href="management_guru" class="flex items-center gap-3 p-4 text-slate-400 hover:bg-white/5 rounded-2xl transition">
+                    <i class="fas fa-chalkboard-teacher w-6 text-center"></i> Data Guru
+                </a>
+                <a href="management_kelas" class="flex items-center gap-3 p-4 text-slate-400 hover:bg-white/5 rounded-2xl transition">
+                    <i class="fas fa-school w-6 text-center"></i> Data Kelas
+                </a>
+                <a href="management_mapel" class="flex items-center gap-3 p-4 text-slate-400 hover:bg-white/5 rounded-2xl transition">
+                    <i class="fas fa-book w-6 text-center"></i> Mata Pelajaran
+                </a>
+                <a href="management_jadwal" class="flex items-center gap-3 p-4 text-slate-400 hover:bg-white/5 rounded-2xl transition">
+                    <i class="fas fa-calendar-alt w-6 text-center"></i> Jadwal
+                </a>
+                <a href="laporan" class="flex items-center gap-3 p-4 text-slate-400 hover:bg-white/5 rounded-2xl transition">
+                    <i class="fas fa-file-alt w-6 text-center"></i> Laporan
+                </a>
+                
+            </nav>
+        </div>
+        <div class="mt-auto p-6 border-t border-white/10">
+            <button onclick="logout()" class="w-full flex items-center gap-3 p-4 text-rose-400 hover:bg-rose-400/10 rounded-2xl font-bold transition">
+                <i class="fas fa-sign-out-alt"></i> Keluar
+            </button>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col min-w-0 pb-24 lg:pb-0">
+        <header class="bg-white/80 backdrop-blur-md border-b border-slate-200 p-4 lg:p-6 flex justify-between items-center sticky top-0 z-30">
+            <div class="flex items-center gap-3">
+                <button onclick="toggleMenu()" class="lg:hidden w-10 h-10 flex items-center justify-center bg-slate-100 rounded-xl text-slate-600">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1 class="text-lg lg:text-2xl font-bold text-slate-800">Data Siswa</h1>
+            </div>
+            <button onclick="openModal('add')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl lg:rounded-2xl font-bold transition flex items-center gap-2 shadow-lg shadow-indigo-200 text-sm">
+                <i class="fas fa-plus-circle"></i> <span>Tambah Siswa</span>
+            </button>
+        </header>
+
+        <div class="p-4 lg:p-6">
+            <div class="bg-white rounded-[1.5rem] lg:rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50 border-b border-slate-100 hidden lg:table-header-group">
+                            <tr class="text-slate-500 text-[11px] uppercase tracking-widest font-bold">
+                                <th class="p-5 pl-8">Siswa</th>
+                                <th class="p-5">NISN</th>
+                                <th class="p-5">Kelas</th>
+                                <th class="p-5">Username</th>
+                                <th class="p-5 pr-8 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="siswaTableBody" class="divide-y divide-slate-50 text-sm">
+                            <tr><td colspan="5" class="p-10 text-center text-slate-400 italic">Memuat data siswa...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 flex justify-between items-center z-40 rounded-t-[2rem] shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
+        <a href="/admin/dashboard" class="flex flex-col items-center gap-1 text-slate-400">
+            <i class="fas fa-home-alt text-lg"></i>
+            <span class="text-[10px] font-bold">Beranda</span>
+        </a>
+        <a href="/admin/management_siswa" class="flex flex-col items-center gap-1 text-indigo-600">
+            <i class="fas fa-user-graduate text-lg"></i>
+            <span class="text-[10px] font-bold">Siswa</span>
+        </a>
+        <div class="relative -translate-y-6">
+            <a href="#"
+                class="flex flex-col items-center justify-center w-16 h-16 bg-indigo-600 rounded-full shadow-[0_8px_20px_rgba(79,70,229,0.4)] border-4 border-white transition-transform active:scale-95">
+                <i class="fas fa-qrcode text-2xl text-white"></i>
+            </a>
+            <span class="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-bold text-slate-500">Scan</span>
+        </div>
+
+        <a href="/admin/management_guru" class="flex flex-col items-center gap-1 text-slate-400 mb-1">
+            <i class="fas fa-chalkboard-teacher text-lg"></i>
+            <span class="text-[10px] font-bold">Guru</span>
+        </a>
+        <button onclick="toggleMenu()" class="flex flex-col items-center gap-1 text-slate-400">
+            <i class="fas fa-bars text-lg"></i>
+            <span class="text-[10px] font-bold">Menu</span>
+        </button>
+    </nav>
+
+    <div id="siswaModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-[60] flex items-center justify-center p-0 lg:p-4">
+        <div class="bg-white w-full h-full lg:h-auto lg:max-w-xl rounded-none lg:rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                <h3 id="modalTitle" class="text-xl font-bold text-slate-800 tracking-tight">Tambah Siswa</h3>
+                <button onclick="closeModal()" class="w-10 h-10 flex items-center justify-center bg-slate-100 rounded-full text-slate-400"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="siswaForm" class="p-6 space-y-4 overflow-y-auto flex-1 lg:max-h-[80vh]">
+                <input type="hidden" id="siswaId">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-black text-slate-400 ml-1 tracking-widest">NAMA LENGKAP</label>
+                        <input type="text" id="nama_siswa" required class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-indigo-500 outline-none transition">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-black text-slate-400 ml-1 tracking-widest">NISN</label>
+                        <input type="text" id="nisn" required class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-indigo-500 outline-none transition">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-black text-slate-400 ml-1 tracking-widest text-nowrap">KELAS (ID)</label>
+                        <input type="number" id="kelas_id" required class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-indigo-500 outline-none transition">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-black text-slate-400 ml-1 tracking-widest">BARCODE DATA</label>
+                        <input type="text" id="barcode_data" required placeholder="Contoh: SISWA-001" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-indigo-500 outline-none transition">
+                    </div>
+                </div>
+                <hr class="border-slate-100 my-2">
+                <div class="space-y-1">
+                    <label class="text-[10px] font-black text-slate-400 ml-1 tracking-widest uppercase">Email Sekolah</label>
+                    <input type="email" id="email" required class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-indigo-500 outline-none transition">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-black text-slate-400 ml-1 tracking-widest uppercase">Username Login</label>
+                    <input type="text" id="username" required class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-indigo-500 outline-none transition">
+                </div>
+                <div id="passwordContainer" class="space-y-1">
+                    <label class="text-[10px] font-black text-slate-400 ml-1 tracking-widest uppercase">Password</label>
+                    <input type="password" id="password" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-indigo-500 outline-none transition">
+                </div>
+
+                <div class="pt-6 flex gap-3 pb-4">
+                    <button type="button" onclick="closeModal()" class="flex-1 py-4 font-bold text-slate-500 bg-slate-100 rounded-2xl">Batal</button>
+                    <button type="submit" class="flex-1 py-4 bg-indigo-600 text-white font-bold rounded-2xl shadow-lg shadow-indigo-100">Simpan Data</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let allSiswa = [];
+        const tableBody = document.getElementById('siswaTableBody');
+
+        function toggleMenu() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('hidden');
+        }
+
+        async function fetchSiswa() {
+            try {
+                const response = await fetch('/adminSiswa/siswa');
+                const data = await response.json();
+                allSiswa = data;
+                renderTable(data);
+            } catch (err) { console.error("Error load siswa:", err); }
+        }
+
+        function renderTable(data) {
+            tableBody.innerHTML = data.map(s => `
+                <tr class="flex flex-col lg:table-row p-5 lg:p-0 border-b lg:border-none">
+                    <td class="p-0 lg:p-5 lg:pl-8">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 lg:w-10 lg:h-10 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600 font-bold text-xs">
+                                ${s.nama_siswa.substring(0,2).toUpperCase()}
+                            </div>
+                            <div>
+                                <div class="font-bold text-slate-800 text-base lg:text-sm">${s.nama_siswa}</div>
+                                <div class="text-[10px] text-slate-500 uppercase font-bold lg:hidden">${s.Kela ? s.Kela.nama_kelas : 'Tanpa Kelas'}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="hidden lg:table-cell p-5 text-slate-600 font-medium">${s.nisn}</td>
+                    <td class="hidden lg:table-cell p-5">
+                        <span class="bg-slate-100 text-slate-600 px-3 py-1 rounded-lg font-bold text-[10px]">
+                            ${s.Kela ? s.Kela.nama_kelas : '-'}
+                        </span>
+                    </td>
+                    <td class="hidden lg:table-cell p-5 text-slate-500 italic">@${s.User.username}</td>
+                    <td class="p-0 pt-4 lg:p-5 lg:pr-8">
+                        <div class="flex lg:justify-center gap-2">
+                            <button onclick="openModal('edit', ${s.id})" class="flex-1 lg:flex-none py-3 lg:p-2 bg-blue-50 text-blue-600 rounded-xl font-bold text-xs transition active:scale-95">
+                                <i class="fas fa-edit mr-2 lg:mr-0"></i> Edit
+                            </button>
+                            <button onclick="deleteSiswa(${s.id})" class="flex-1 lg:flex-none py-3 lg:p-2 bg-rose-50 text-rose-600 rounded-xl font-bold text-xs transition active:scale-95">
+                                <i class="fas fa-trash mr-2 lg:mr-0"></i> Hapus
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        document.getElementById('siswaForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('siswaId').value;
+            const payload = {
+                nama_siswa: document.getElementById('nama_siswa').value,
+                nisn: document.getElementById('nisn').value,
+                kelas_id: document.getElementById('kelas_id').value,
+                barcode_data: document.getElementById('barcode_data').value,
+                email: document.getElementById('email').value,
+                username: document.getElementById('username').value,
+            };
+
+            const isEdit = !!id;
+            if (!isEdit) payload.password = document.getElementById('password').value;
+
+            try {
+                const res = await fetch(isEdit ? `/adminSiswa/siswa/${id}` : '/adminSiswa/siswa', {
+                    method: isEdit ? 'PUT' : 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                alert(result.message);
+                closeModal();
+                fetchSiswa();
+            } catch (err) { alert("Gagal menyimpan data!"); }
+        };
+
+        async function deleteSiswa(id) {
+            if (confirm('Hapus data siswa ini? Akun login juga akan dihapus.')) {
+                await fetch(`/adminSiswa/siswa/${id}`, { method: 'DELETE' });
+                fetchSiswa();
+            }
+        }
+
+        function openModal(mode, id = null) {
+            document.getElementById('siswaModal').classList.remove('hidden');
+            document.getElementById('siswaForm').reset();
+            document.getElementById('siswaId').value = id;
+            if (mode === 'edit') {
+                const s = allSiswa.find(item => item.id === id);
+                document.getElementById('modalTitle').innerText = 'Edit Siswa';
+                document.getElementById('nama_siswa').value = s.nama_siswa;
+                document.getElementById('nisn').value = s.nisn;
+                document.getElementById('kelas_id').value = s.kelas_id;
+                document.getElementById('barcode_data').value = s.barcode_data;
+                document.getElementById('email').value = s.User.email;
+                document.getElementById('username').value = s.User.username;
+                document.getElementById('passwordContainer').classList.add('hidden');
+            } else {
+                document.getElementById('modalTitle').innerText = 'Tambah Siswa';
+                document.getElementById('passwordContainer').classList.remove('hidden');
+            }
+        }
+        async function logout() {
+            const response = await fetch('/auth/logout', { method: 'POST' });
+            if (response.ok) window.location.href = '/';
+        }
+
+        function closeModal() { document.getElementById('siswaModal').classList.add('hidden'); }
+
+        fetchSiswa();
+    </script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riwayat Presensi | E-Presensi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; }
+        .card-shadow { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
+    </style>
+</head>
+<body class="pb-24">
+
+    <div class="bg-indigo-600 p-6 rounded-b-[2.5rem] text-white shadow-lg sticky top-0 z-40">
+        <div class="flex items-center gap-4 mb-4">
+            <a href="/dashboard-siswa" class="text-white/80 hover:text-white transition"><i class="fas fa-arrow-left text-xl"></i></a>
+            <h1 class="text-xl font-bold">Riwayat Presensi</h1>
+        </div>
+        
+        <div class="flex gap-2">
+            <select id="filterBulan" onchange="fetchRiwayat()" class="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-3 py-2 text-sm outline-none w-full">
+                <option value="1">Januari</option><option value="2">Februari</option><option value="3">Maret</option>
+                <option value="4">April</option><option value="5">Mei</option><option value="6">Juni</option>
+                <option value="7">Juli</option><option value="8">Agustus</option><option value="9">September</option>
+                <option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
+            </select>
+            <button onclick="exportRiwayatPDF()" class="bg-white text-indigo-600 p-2 rounded-xl border border-white transition shadow-sm">
+                <i class="fas fa-file-pdf"></i>
+            </button>
+        </div>
+    </div>
+
+    <main class="p-6">
+        <div class="grid grid-cols-3 gap-3 mb-8">
+            <div class="bg-white p-3 rounded-2xl border border-slate-100 card-shadow text-center">
+                <p class="text-[9px] font-bold text-slate-400 uppercase">Hadir</p>
+                <h4 id="statHadir" class="text-lg font-black text-emerald-500">0</h4>
+            </div>
+            <div class="bg-white p-3 rounded-2xl border border-slate-100 card-shadow text-center">
+                <p class="text-[9px] font-bold text-slate-400 uppercase">Late</p>
+                <h4 id="statLate" class="text-lg font-black text-amber-500">0</h4>
+            </div>
+            <div class="bg-white p-3 rounded-2xl border border-slate-100 card-shadow text-center">
+                <p class="text-[9px] font-bold text-slate-400 uppercase">Alpa</p>
+                <h4 id="statAlpa" class="text-lg font-black text-rose-500">0</h4>
+            </div>
+        </div>
+
+        <div id="riwayatList" class="space-y-4">
+            <div class="animate-pulse flex gap-4 p-4 bg-white rounded-3xl">
+                <div class="w-12 h-12 bg-slate-100 rounded-2xl"></div>
+                <div class="flex-1 space-y-2 py-1"><div class="h-4 bg-slate-100 rounded w-1/2"></div><div class="h-3 bg-slate-100 rounded w-1/4"></div></div>
+            </div>
+        </div>
+    </main>
+
+    <nav class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-slate-100 p-4 flex justify-around items-center z-50">
+        <a href="dashboard" class="text-slate-300 flex flex-col items-center gap-1"><i class="fas fa-home text-xl"></i></a>
+        <a href="riwayat" class="text-indigo-600 flex flex-col items-center gap-1"><i class="fas fa-calendar-check text-xl"></i></a>
+        <a href="profile" class="text-slate-300 flex flex-col items-center gap-1"><i class="fas fa-user-circle text-xl"></i></a>
+    </nav>
+
+    <script>
+        let currentData = [];
+
+        // Set filter ke bulan sekarang saat pertama kali dibuka
+        window.onload = () => {
+            const d = new Date();
+            document.getElementById('filterBulan').value = d.getMonth() + 1;
+            fetchRiwayat();
+        };
+
+        async function fetchRiwayat() {
+            const bulan = document.getElementById('filterBulan').value;
+            const tahun = new Date().getFullYear();
+            const container = document.getElementById('riwayatList');
+
+            try {
+                const res = await fetch(`/siswa/rekap-riwayat?bulan=${bulan}&tahun=${tahun}`);
+                currentData = await res.json();
+                
+                renderRiwayat(currentData);
+            } catch (err) {
+                container.innerHTML = `<p class="text-center text-rose-500 text-sm">Gagal memuat data.</p>`;
+                
+            }
+        }
+
+        function renderRiwayat(data) {
+            const container = document.getElementById('riwayatList');
+            let h = 0, l = 0, a = 0;
+
+            if (data.length === 0) {
+                container.innerHTML = `<div class="text-center py-20"><img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" class="w-20 mx-auto opacity-20 mb-4"><p class="text-slate-400 text-xs italic">Tidak ada catatan absen di bulan ini.</p></div>`;
+                updateStats(0, 0, 0);
+                return;
+            }
+
+            container.innerHTML = data.map(item => {
+                if (item.status === 'Hadir') h++;
+                else if (item.status === 'Terlambat') l++;
+                else a++;
+
+                const tgl = new Date(item.waktu_scan).toLocaleDateString('id-ID', { day: 'numeric', month: 'long' });
+                const jam = new Date(item.waktu_scan).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+                return `
+                    <div class="bg-white p-4 rounded-3xl border border-slate-50 card-shadow flex items-center gap-4">
+                        <div class="w-12 h-12 ${item.status === 'Hadir' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'} rounded-2xl flex items-center justify-center font-bold text-lg">
+                            <i class="fas ${item.status === 'Hadir' ? 'fa-check-double' : 'fa-clock'}"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-sm font-bold text-slate-800">${item.Jadwal.Mapel.nama_mapel}</h4>
+                            <p class="text-[10px] text-slate-400 font-medium">${tgl} • ${jam} WIB</p>
+                        </div>
+                        <span class="text-[9px] font-black uppercase px-3 py-1 rounded-full ${item.status === 'Hadir' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
+                            ${item.status}
+                        </span>
+                    </div>
+                `;
+            }).join('');
+
+            updateStats(h, l, a);
+        }
+
+        function updateStats(h, l, a) {
+            document.getElementById('statHadir').innerText = h;
+            document.getElementById('statLate').innerText = l;
+            document.getElementById('statAlpa').innerText = a;
+        }
+
+        async function exportRiwayatPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Perlu fetch profil untuk nama
+            const resSiswa = await fetch('/siswa/profil-saya');
+            const profil = await resSiswa.json();
+
+            doc.setFontSize(18);
+            doc.text("Laporan Presensi Bulanan", 14, 20);
+            doc.setFontSize(10);
+            doc.text(`Nama: ${profil.nama_siswa} | NISN: ${profil.nisn}`, 14, 28);
+            doc.text(`Bulan: ${document.getElementById('filterBulan').options[document.getElementById('filterBulan').selectedIndex].text}`, 14, 34);
+
+            const tableBody = currentData.map((item, i) => [
+                i + 1,
+                new Date(item.waktu_scan).toLocaleDateString('id-ID'),
+                item.Jadwal.Mapel.nama_mapel,
+                item.status
+            ]);
+
+            doc.autoTable({
+                startY: 40,
+                head: [['No', 'Tanggal', 'Mata Pelajaran', 'Status']],
+                body: tableBody,
+                headStyles: { fillColor: [79, 70, 229] }
+            });
+
+            doc.save(`Laporan_Absen_Siswa_${profil.nisn}.pdf`);
+        }
+    </script>
+</body>
+</html>
