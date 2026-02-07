@@ -8,7 +8,7 @@ require('moment/locale/id'); // npm install moment (untuk olah waktu lebih mudah
 router.post('/scan', async (req, res) => {
     try {
         const { barcode_data } = req.body;
-        const now = moment(); // Waktu sekarang
+        const now = moment().tz("Asia/Makassar").locale('id'); // Waktu sekarang
         const currentTime = now.format('HH:mm:ss');
         const currentDay = now.locale('id').format('dddd'); // Pastikan locale sesuai atau mapping manual
 
