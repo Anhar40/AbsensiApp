@@ -12,45 +12,59 @@ const isAdmin = (req, res, next) => {
     }
 };
 
-router.get('/stats', isAdmin, async (req, res) => {
+router.get('/stats', async (req, res) => {
     try {
-        // 1. Hitung total dasar
         const totalSiswa = await Siswa.count();
         const totalGuru = await Guru.count();
         const totalKelas = await Kelas.count();
 
-        // 2. Hitung absensi hari ini saja
-        const hariIni = new Date().toISOString().slice(0, 10); // Format YYYY-MM-DD
+        // Perbaikan Filter Hari Ini (Lebih Aman untuk MySQL/Postgres)
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date();
+        endOfDay.setHours(23, 59, 59, 999);
+
         const absenHariIni = await Absensi.count({
             where: {
                 waktu_scan: {
-                    [Op.startsWith]: hariIni
+                    [Op.between]: [startOfDay, endOfDay]
                 }
             }
         });
 
-        // 3. Ambil 5 riwayat absensi terbaru untuk ditampilkan di tabel dashboard
         const recentAbsensi = await Absensi.findAll({
             limit: 5,
             order: [['waktu_scan', 'DESC']],
             include: [
-                { model: Siswa, attributes: ['nama_siswa'] },
-                { model: Jadwal, include: [{ model: Kelas, attributes: ['nama_kelas'] }] }
+                { 
+                    model: Siswa, 
+                    attributes: ['nama_siswa'],
+                    required: false // Agar tetap muncul meski data siswa bermasalah
+                },
+                { 
+                    model: Jadwal, 
+                    required: false,
+                    include: [{ model: Kelas, attributes: ['nama_kelas'] }] 
+                }
             ]
         });
 
         res.json({
             summary: {
-                totalSiswa,
-                totalGuru,
-                totalKelas,
-                absenHariIni
+                totalSiswa: totalSiswa || 0,
+                totalGuru: totalGuru || 0,
+                totalKelas: totalKelas || 0,
+                absenHariIni: absenHariIni || 0
             },
-            recentAbsensi
+            recentAbsensi: recentAbsensi || []
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Gagal mengambil data statistik" });
+        // SANGAT PENTING: Lihat log di Vercel untuk pesan ini!
+        console.error("LOG ERROR SERVER:", error.message);
+        res.status(500).json({ 
+            message: "Gagal mengambil data statistik",
+            debug: error.message // Hapus bagian ini jika sudah masuk tahap produksi
+        });
     }
 });
 
