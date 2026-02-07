@@ -1,5 +1,6 @@
 const express = require('express');
 const session = require('express-session');
+const SequelizeStore = require('connect-session-sequelize')(session.Store);
 const helmet = require('helmet');
 require('dotenv').config(); 
 const sequelize = require('./config/db'); 
@@ -21,6 +22,7 @@ const profileGuruRoutes = require('./routes/guru/profilleGuru');
 const dashboardSiswaRoutes = require('./routes/siswa/dashboard');
 
 const app = express();
+app.set('trust proxy', 1);
 const cors = require('cors');
 app.use(cors({
   origin: process.env.HOST, // Port default Vite
@@ -80,16 +82,20 @@ app.use(
 app.use(express.json());
 
 app.use(session({
-    name: 'SESS_ID',
-    secret: process.env.SESSION_SECRET || 'rahasia_sekolah_123',
-    resave: false,
-    saveUninitialized: false,
-    cookie: { 
-        secure: true, 
-        httpOnly: true, 
-        maxAge: 3600000,
-        sameSite: 'lax'
-    }
+  secret: process.env.SESSION_SECRET,
+  store: new SequelizeStore({
+    db: sequelize,
+    checkExpirationInterval: 15 * 60 * 1000,
+    expiration: 24 * 60 * 60 * 1000
+  }),
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: true, // WAJIB untuk Vercel
+    sameSite: 'lax',
+    maxAge: 24 * 60 * 60 * 1000
+  }
 }));
 
 app.use(express.static(path.join(__dirname, 'public')));
@@ -128,18 +134,5 @@ app.use('/laporan', laporanRoutes);
 
 app.use('/guru', dashboardGuruRoutes, profileGuruRoutes);
 app.use('/siswa', dashboardSiswaRoutes);
-
-// Handle 404 errors
-app.use(session({
-  name: 'SESS_ID',
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: false, // WAJIB FALSE jika masih HTTP (bukan HTTPS)
-    httpOnly: true,
-    sameSite: 'lax' // Penting untuk browser modern
-  }
-}));
 
 module.exports = app;
