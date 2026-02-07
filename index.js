@@ -23,7 +23,7 @@ const dashboardSiswaRoutes = require('./routes/siswa/dashboard');
 const app = express();
 const cors = require('cors');
 app.use(cors({
-  origin: 'http://localhost:3000', // Port default Vite
+  origin: process.env.HOST, // Port default Vite
   credentials: true
 }));
 
