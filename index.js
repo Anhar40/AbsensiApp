@@ -68,9 +68,10 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: { 
-        secure: process.env.NODE_ENV === 'production', 
+        secure: true, 
         httpOnly: true, 
-        maxAge: 3600000
+        maxAge: 3600000,
+        sameSite: 'lax'
     }
 }));
 
@@ -96,11 +97,6 @@ app.get('/:folder/:page', (req, res, next) => {
     }
     next();
 });
-
-// Jika dalam mode produksi
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, 'public')));
-}
 
 
 app.use('/auth', authRoutes);
@@ -129,23 +125,4 @@ app.use(session({
   }
 }));
 
-const startServer = async () => {
-    try {
-
-        await sequelize.authenticate();
-        console.log('✅ [DATABASE] Connection has been established successfully.');
-        
-        await sequelize.sync({ alter: true });
-        console.log('📂 [DATABASE] All models were synchronized successfully.');
-
-        const PORT = process.env.PORT || 3000;
-        app.listen(PORT, () => {
-            console.log(`🚀 [SERVER] Server is running on port ${process.env.HOST || 'http://localhost'}:${PORT}`);
-            console.log(`🛡️  [SECURITY] Helmet & Session protection active`);
-        });
-    } catch (error) {
-        console.error('❌ [SERVER ERROR] Unable to start server:', error);
-    }
-};
-
-startServer();
+module.exports = app;
