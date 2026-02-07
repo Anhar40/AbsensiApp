@@ -38,9 +38,11 @@ app.use(
         "https://cdn.tailwindcss.com", 
         "https://cdn.jsdelivr.net",
         "https://cdnjs.cloudflare.com",
+        "https://unpkg.com", // <--- WAJIB untuk library Scanner
         "'unsafe-inline'",
+        "'unsafe-eval'",    // <--- Dibutuhkan beberapa library scanner untuk memproses gambar
         "https://vercel.live",
-        "https://*.vercel.live" // <--- Tambahkan wildcard ini
+        "https://*.vercel.live"
       ],
       scriptSrcAttr: ["'unsafe-inline'"], 
       styleSrc: [
@@ -58,6 +60,7 @@ app.use(
       imgSrc: [
         "'self'", 
         "data:", 
+        "blob:",            // <--- WAJIB untuk memproses stream kamera
         "https://ui-avatars.com",
         "https://cdnjs.cloudflare.com",
         "https://cdn-icons-png.flaticon.com",
@@ -67,14 +70,22 @@ app.use(
       connectSrc: [
         "'self'", 
         "https://vercel.live", 
-        "https://*.vercel.live" // <--- Tambahkan wildcard ini
+        "https://*.vercel.live",
+        "https://unpkg.com"  // <--- Agar bisa fetch library jika diperlukan
       ],
-      // TAMBAHKAN INI: Karena Vercel Live menggunakan Iframe
       frameSrc: [
         "'self'", 
         "https://vercel.live", 
         "https://*.vercel.live"
       ],
+      // SOLUSI ERROR AUDIO:
+      mediaSrc: [
+        "'self'", 
+        "https://assets.mixkit.co" // <--- Izinkan suara beep dari Mixkit
+      ],
+      // WAJIB UNTUK KAMERA:
+      workerSrc: ["'self'", "blob:"],
+      childSrc: ["'self'", "blob:"]
     },
   })
 );
