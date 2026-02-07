@@ -36,7 +36,8 @@ app.use(
         "https://cdn.tailwindcss.com", 
         "https://cdn.jsdelivr.net",      // Untuk JsBarcode
         "https://cdnjs.cloudflare.com",  // UNTUK jsPDF & FontAwesome JS
-        "'unsafe-inline'"
+        "'unsafe-inline'",
+        "https://vercel.live"
       ],
       scriptSrcAttr: ["'unsafe-inline'"], 
       styleSrc: [
@@ -53,9 +54,10 @@ app.use(
       ],
       imgSrc: ["'self'", "data:", "https://ui-avatars.com",
         "https://cdnjs.cloudflare.com",
-        "https://cdn-icons-png.flaticon.com"
+        "https://cdn-icons-png.flaticon.com",
+        "https://vercel.com", "https://vercel.live"
       ],
-      connectSrc: ["'self'"], 
+      connectSrc: ["'self'", "https://vercel.live"], 
     },
   })
 );
