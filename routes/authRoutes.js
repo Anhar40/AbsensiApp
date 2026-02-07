@@ -10,7 +10,7 @@ const loginLimiter = rateLimit({
     message: { message: "Terlalu banyak percobaan login." }
 });
 
-router.post('/login', loginLimiter, async (req, res) => {
+router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
 
