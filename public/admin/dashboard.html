@@ -216,38 +216,54 @@
         async function fetchDashboardData() {
             try {
                 const response = await fetch('/admin/stats');
-                //if (response.status === 403) {
-                //    window.location.href = '/';
-                //    return;
-                //}
+
+                // 1. DEFINISIKAN 'data' TERLEBIH DAHULU!
                 const data = await response.json();
 
-                document.getElementById('statSiswa').textContent = data.summary.totalSiswa;
-                document.getElementById('statGuru').textContent = data.summary.totalGuru;
-                document.getElementById('statKelas').textContent = data.summary.totalKelas;
-                document.getElementById('statAbsen').textContent = data.summary.absenHariIni;
+                // 2. Cek status response
+                if (!response.ok) throw new Error(data.message || 'Gagal mengambil data');
+
+                // 3. Isi Summary (Gunakan optional chaining)
+                document.getElementById('statSiswa').textContent = data.summary?.totalSiswa ?? 0;
+                document.getElementById('statGuru').textContent = data.summary?.totalGuru ?? 0;
+                document.getElementById('statKelas').textContent = data.summary?.totalKelas ?? 0;
+                document.getElementById('statAbsen').textContent = data.summary?.absenHariIni ?? 0;
 
                 const tableBody = document.getElementById('tableBody');
                 tableBody.innerHTML = '';
 
-                data.recentAbsensi.forEach(absen => {
-                    const time = new Date(absen.waktu_scan).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                    const row = `
-                        <tr class="hover:bg-slate-50 transition">
-                            <td class="p-4 pl-6">
-                                <p class="font-bold text-slate-800 text-sm">${absen.Siswa.nama_siswa}</p>
-                                <p class="text-[10px] text-indigo-500 font-medium lg:hidden">${absen.Jadwal.Kela.nama_kelas}</p>
-                            </td>
-                            <td class="p-4 text-slate-500 text-sm hidden lg:table-cell">${absen.Jadwal.Kela.nama_kelas}</td>
-                            <td class="p-4 text-right pr-6">
-                                <span class="bg-emerald-50 text-emerald-700 px-2 py-1 rounded-lg text-[10px] font-black">${time}</span>
-                            </td>
-                        </tr>
-                    `;
-                    tableBody.insertAdjacentHTML('beforeend', row);
-                });
+                // 4. Looping data tabel
+                if (data.recentAbsensi && data.recentAbsensi.length > 0) {
+                    data.recentAbsensi.forEach(absen => {
+                        const time = new Date(absen.waktu_scan).toLocaleTimeString('id-ID', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+
+                        // Hati-hati: Pastikan nama relasi sesuai (Kelas, bukan Kela)
+                        const namaKelas = absen.Jadwal?.Kelas?.nama_kelas || '-';
+                        const namaSiswa = absen.Siswa?.nama_siswa || 'Anonim';
+
+                        const row = `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-4 pl-6">
+                            <p class="font-bold text-slate-800 text-sm">${namaSiswa}</p>
+                            <p class="text-[10px] text-indigo-500 font-medium lg:hidden">${namaKelas}</p>
+                        </td>
+                        <td class="p-4 text-slate-500 text-sm hidden lg:table-cell">${namaKelas}</td>
+                        <td class="p-4 text-right pr-6">
+                            <span class="bg-emerald-50 text-emerald-700 px-2 py-1 rounded-lg text-[10px] font-black">${time}</span>
+                        </td>
+                    </tr>
+                `;
+                        tableBody.insertAdjacentHTML('beforeend', row);
+                    });
+                } else {
+                    tableBody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-slate-400">Belum ada absensi hari ini</td></tr>';
+                }
             } catch (error) {
-                console.error("Error:", error);
+                console.error("Error Dashboard:", error);
+                // Opsional: Tampilkan pesan error di layar jika perlu
             }
         }
         async function logout() {
@@ -255,7 +271,7 @@
             if (response.ok) window.location.href = '/';
         }
 
-        
+
 
         fetchDashboardData();
     </script>
