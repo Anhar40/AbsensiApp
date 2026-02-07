@@ -158,10 +158,10 @@
             <i class="fas fa-chart-pie text-xl"></i>
             <span class="text-[10px] font-bold">Rekap</span>
         </a>
-        <a href="/guru/scanner"
+        <button onclick="openScanner()"
             class="bg-indigo-600 text-white w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200 -mt-12 border-4 border-slate-50 active:scale-95 transition">
             <i class="fas fa-qrcode text-xl"></i>
-        </a>
+        </button>
         <a href="/guru/jadwal" class="text-slate-400 flex flex-col items-center gap-1">
             <i class="fas fa-calendar-alt text-xl"></i>
             <span class="text-[10px] font-bold">Jadwal</span>
@@ -173,6 +173,29 @@
     </nav>
 
     <script>
+        async function openScanner() {
+            // 1. Berikan konfirmasi awal agar user tidak kaget
+            const siap = confirm("Klik OKE untuk mengaktifkan kamera dan masuk ke halaman Scanner.");
+
+            if (siap) {
+                try {
+                    // 2. Minta izin kamera secara teknis di dashboard (Pre-permission)
+                    // Ini akan memunculkan pop-up asli dari browser (Allow/Block)
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+
+                    // 3. Jika berhasil (user klik Allow), matikan dulu kamera sementaranya
+                    stream.getTracks().forEach(track => track.stop());
+
+                    // 4. Langsung pindah ke halaman scanner
+                    window.location.href = '/guru/scanner';
+                } catch (err) {
+                    // Jika user menekan 'Block' atau kamera tidak ada
+                    console.error("Izin ditolak atau error:", err);
+                    alert("Kamera tidak dapat diakses. Mohon izinkan akses kamera di pengaturan browser Anda agar dapat melakukan scan.");
+                }
+            }
+        }
+        
         function toggleDropdown() {
             const menu = document.getElementById('dropdownMenu');
             menu.classList.toggle('hidden');
